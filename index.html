@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة ماريو</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #87CEEB; /* السماء الزرقاء */
+        }
+
+        #game {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-color: #cce7ff;
+        }
+
+        #player {
+            position: absolute;
+            width: 50px;
+            height: 70px;
+            background-color: red; /* يمكن استبداله بصورة ماريو لاحقًا */
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        #ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 50px;
+            background-color: #228B22; /* لون الأرض */
+        }
+
+        .enemy {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: green;
+            bottom: 0;
+        }
+
+        #score, #level, #lives {
+            position: absolute;
+            top: 10px;
+            font-size: 24px;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 10px;
+        }
+
+        #score { left: 10px; }
+        #level { left: 100px; }
+        #lives { left: 200px; }
+    </style>
+</head>
+<body>
+
+<div id="game">
+    <div id="player"></div>
+    <div id="ground"></div>
+    <div id="score">النقاط: 0</div>
+    <div id="level">المرحلة: 1</div>
+    <div id="lives">الحياة: 3</div>
+</div>
+
+<script>
+    // إعدادات اللعبة
+    const player = document.getElementById('player');
+    const game = document.getElementById('game');
+    const ground = document.getElementById('ground');
+    const scoreBoard = document.getElementById('score');
+    const levelBoard = document.getElementById('level');
+    const livesBoard = document.getElementById('lives');
+
+    const gravity = 0.8;
+    const jumpPower = 15;
+    let isJumping = false;
+    let velocity = 0;
+    let playerSpeed = 5;
+    let isLeft = false;
+    let isRight = false;
+    let score = 0;
+    let level = 1;
+    let lives = 3;
+    let enemies = [];
+
+    // حركة اللاعب
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft' || e.key === 'a') {
+            isLeft = true;
+        } else if (e.key === 'ArrowRight' || e.key === 'd') {
+            isRight = true;
+        } else if (e.key === ' ' && !isJumping) {
+            isJumping = true;
+            velocity = -jumpPower;
+        }
+    });
+
+    document.addEventListener('keyup', (e) => {
+        if (e.key === 'ArrowLeft' || e.key === 'a') {
+            isLeft = false;
+        } else if (e.key === 'ArrowRight' || e.key === 'd') {
+            isRight = false;
+        }
+    });
+
+    // حركة الأعداء
+    function createEnemy() {
+        let enemy = document.createElement('div');
+        enemy.className = 'enemy';
+        enemy.style.left = `${Math.random() * (game.clientWidth - 50)}px`;
+        enemy.style.bottom = '50px';
+        game.appendChild(enemy);
+        enemies.push(enemy);
+    }
+
+    // تحديث اللعبة
+    function updateGame() {
+        let playerRect = player.getBoundingClientRect();
+        let gameRect = game.getBoundingClientRect();
+
+        // تحريك اللاعب
+        if (isLeft && playerRect.left > gameRect.left) {
+            player.style.left = player.offsetLeft - playerSpeed + 'px';
+        }
+
+        if (isRight && playerRect.right < gameRect.right) {
+            player.style.left = player.offsetLeft + playerSpeed + 'px';
+        }
+
+        // الجاذبية
+        if (isJumping) {
+            velocity += gravity;
+            player.style.bottom = player.offsetTop - velocity + 'px';
+        }
+
+        // التحقق من ملامسة الأرض
+        if (player.offsetTop >= gameRect.height - ground.offsetHeight - player.offsetHeight) {
+            isJumping = false;
+            velocity = 0;
+            player.style.bottom = 0;
+        }
+
+        // التفاعل مع الأعداء
+        enemies.forEach((enemy) => {
+            let enemyRect = enemy.getBoundingClientRect();
+            if (playerRect.left < enemyRect.right && playerRect.right > enemyRect.left &&
+                playerRect.top < enemyRect.bottom && playerRect.bottom > enemyRect.top) {
+                lives--;
+                livesBoard.textContent = `الحياة: ${lives}`;
+                if (lives <= 0) {
+                    alert('Game Over!');
+                    resetGame();
+                }
+                enemy.remove();
+                enemies = enemies.filter((e) => e !== enemy);
+            }
+        });
+
+        // تحديث النقاط
+        scoreBoard.textContent = `النقاط: ${score}`;
+        levelBoard.textContent = `المرحلة: ${level}`;
+
+        // إضافة أعداء جدد
+        if (score % 10 === 0 && score !== 0) {
+            createEnemy();
+            score++;
+        }
+
+        requestAnimationFrame(updateGame);
+    }
+
+    // إعادة تعيين اللعبة بعد الخسارة
+    function resetGame() {
+        score = 0;
+        level = 1;
+        lives = 3;
+        scoreBoard.textContent = `النقاط: ${score}`;
+        levelBoard.textContent = `المرحلة: ${level}`;
+        livesBoard.textContent = `الحياة: ${lives}`;
+        enemies.forEach(enemy => enemy.remove());
+        enemies = [];
+        player.style.left = '50%';
+        player.style.bottom = '0';
+    }
+
+    // بدء اللعبة
+    createEnemy();
+    updateGame();
+</script>
+
+</body>
+</html>
